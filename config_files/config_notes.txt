@@ -1,0 +1,12 @@
+This directory contains necessary config files for tests to function
+It is important that all of these files exist in their corresponding locations
+
+1-network-manager-all.yaml
+    - netplan file
+    - configures static ip's for each interface
+    - location: /etc/netplan
+
+rules.v4
+    - iptables rule file
+    - importing routing info routing test traffic between interfaces
+    - location: /etc/iptables
