@@ -1,12 +1,16 @@
 This directory contains necessary config files for tests to function
 It is important that all of these files exist in their corresponding locations
 
-1-network-manager-all.yaml
-    - netplan file
+interface
     - configures static ip's for each interface
-    - location: /etc/netplan
+    - location: /etc/network/interface
 
 rules.v4
     - iptables rule file
     - importing routing info routing test traffic between interfaces
     - location: /etc/iptables
+
+add-static-arp.sh
+    - handles routing between fake ip's for tricking lo into not working
+    - location: /etc/rc.local
+        + cat ./add-static-arp.sh >> rc.local
