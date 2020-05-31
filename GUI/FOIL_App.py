@@ -3,15 +3,20 @@ from tkinter import *
 import subprocess 
 import os
 
-# these are the dimensions for baby screen
+# Dimensions for baby screen
 HEIGHT = 600
 WIDTH = 1040 
 
 TITLE = "DJM FOIL Test"
 
+# File locations
 script_dir = "/home/djm/FOIL_test/scripts/"
 image_dir = "./img"
 results_file = "/tmp/foil_test.txt"
+
+# Test result vars
+dl_stats = {'transferred_bytes': 0, 'bps': 0, 'duration': ""}
+ul_stats = {'transferred_bytes': 0, 'bps': 0, 'duration': ""}
 
 def bw_test():
     """
@@ -23,10 +28,43 @@ def bw_test():
     subprocess.call([script_dir+"run_test.sh"])
     
     results["text"] = "" 
+    """
+    VERY sloppy line_count variable explained
+    0 -> first line (skip)
+    1 -> dl data line
+    2 -> ul data line
+    """
+    line_count = 0
     with open(results_file) as stats:
         for line in stats:
-            results["text"] += line
+            csv_list = line.split(",")
+            if line_count == 0:
+                pass
+            elif line_count == 1:
+                dl_stats['transferred_bytes'] = float(csv_list[7])
+                dl_stats['bps'] = float(csv_list[8])
+                dl_stats['duration'] = float(csv_list[6].split("-")[1])
+
+            elif line_count == 2:
+                ul_stats['transferred_bytes'] = float(csv_list[7])
+                ul_stats['bps'] = float(csv_list[8])
+                ul_stats['duration'] = float(csv_list[6].split("-")[1])
+            
+            line_count += 1
+            
+        print_results(dl_stats, "Download") 
+        print_results(ul_stats, "Upload") 
+
+def print_results(stats, label):
+    """
+    Prints stats dictionary to results panel
+    """
+    results["text"] += label + ":\n"
+    for key, value in stats.items():
+        results["text"] += key + ": " + str(value) + "\n"
+    results["text"] += "\n"
     
+
 
 def is_connected():
     """
@@ -47,7 +85,7 @@ def connection_loop():
     uses root.after to constantly check if device is connected
     """
     is_connected()
-    root.after(1500,connection_loop)
+    root.after(1500, connection_loop)
 
 root = tk.Tk()
 root.title(TITLE)
@@ -81,6 +119,8 @@ button.place(relx=0.7, relheight=1, relwidth=0.3)
 
 # END OF TOP_FRAME COMPONENTS
 
+# RESULTS PANE CONFIGUTRATION
+
 lower_frame = tk.Frame(root, bg="white", bd=10)
 lower_frame.place(relx=0.5, rely=0.25, relwidth=0.75, relheight=0.6,anchor='n')
 
@@ -92,6 +132,7 @@ results = tk.Label(lower_frame, font=('Ubuntu', 15), anchor='nw',
     justify='left', bd=4) 
 results.place(rely=.1, relwidth=1, relheight=.9)
 
+# END OF RESULTS PANE CONFIGUTRATION
 root.after(1500, connection_loop)
 root.mainloop()
 
