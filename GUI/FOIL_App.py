@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import * 
+import subprocess 
 import os
 
 # these are the dimensions for baby screen
@@ -8,24 +9,45 @@ WIDTH = 1040
 
 TITLE = "DJM FOIL Test"
 
-script_dir = "/home/djm/FOIL_test/scripts"
+script_dir = "/home/djm/FOIL_test/scripts/"
 image_dir = "./img"
+results_file = "/tmp/foil_test.txt"
 
 def bw_test():
     """
     Main method that will call iperf scripts and test BW
     iperf scripts will send output to file in which results will be retrieved
     """
-    results["text"] = "You passed"
+    if not is_connected():
+        return
+    subprocess.call([script_dir+"run_test.sh"])
+    
+    results["text"] = "" 
+    with open(results_file) as stats:
+        for line in stats:
+            results["text"] += line
+    
 
 def is_connected():
     """
-    ping one iface from the other. success -> True
-    run 'route_config.sh' if not connected
-    This method should be ran every couple seconds or so
+    scripts_dir/is_connected.sh will check for a link between to eth ports via
+    ping. Returns non zero exit code when disconnected
     """
-    connected["text"] = "Not Connected"
-    return True
+    devnull = open(os.devnull, 'w')
+    e_code = subprocess.call([script_dir+"is_connected.sh"], stdout=devnull)
+    if e_code != 0:
+        connected["text"] = "Not Connected"
+        return False 
+    else:
+        connected["text"] = "Connected"
+        return True
+
+def connection_loop():
+    """
+    uses root.after to constantly check if device is connected
+    """
+    is_connected()
+    root.after(1500,connection_loop)
 
 root = tk.Tk()
 root.title(TITLE)
@@ -49,7 +71,7 @@ top_frame = tk.Frame(root, bg="white", bd=5)
 # achor=n ensures frame will be centered
 top_frame.place(relx=0.5, rely=0.11, relwidth=0.75, relheight=0.1, anchor='n')
 
-connected = tk.Label(top_frame, text="Connected/Not Connected", 
+connected = tk.Label(top_frame,
     font=('Ubuntu', 20), bg="white", anchor='w', justify="left")
 connected.place (relx=0.01, relwidth=0.50, relheight = 1)
 
@@ -70,5 +92,6 @@ results = tk.Label(lower_frame, font=('Ubuntu', 15), anchor='nw',
     justify='left', bd=4) 
 results.place(rely=.1, relwidth=1, relheight=.9)
 
+root.after(1500, connection_loop)
 root.mainloop()
 

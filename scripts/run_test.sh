@@ -2,6 +2,7 @@
 
 # Main script for running throughput test
 
+script_dir="/home/djm/FOIL_test/scripts/"
 outfile="/tmp/foil_test.txt"
 
 if [ -f $outfile ]
@@ -13,7 +14,7 @@ fi
 touch $outfile
 
 # Is device connected?
-./is_connected.sh > /dev/null
+${script_dir}is_connected.sh > /dev/null
 if [ $? -eq 1 ]
 then
     echo Device not detected. >> $outfile
