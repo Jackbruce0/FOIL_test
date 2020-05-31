@@ -15,19 +15,24 @@ image_dir = "./img"
 results_file = "/tmp/foil_test.txt"
 
 # Test result vars
-dl_stats = {'transferred_bytes': 0, 'bps': 0, 'duration': ""}
-ul_stats = {'transferred_bytes': 0, 'bps': 0, 'duration': ""}
+dl_stats = {'transferred_bytes': 0, 'bps': 0, 'duration': 0}
+ul_stats = {'transferred_bytes': 0, 'bps': 0, 'duration': 0} 
 
 def bw_test():
     """
     Main method that will call iperf scripts and test BW
     iperf scripts will send output to file in which results will be retrieved
     """
+    button.config(text="Testing...")
+    button.update_idletasks()
+
+    results["text"] = "" 
+    results.update_idletasks()
+
     if not is_connected():
         return
     subprocess.call([script_dir+"run_test.sh"])
     
-    results["text"] = "" 
     """
     VERY sloppy line_count variable explained
     0 -> first line (skip)
@@ -44,16 +49,18 @@ def bw_test():
                 dl_stats['transferred_bytes'] = float(csv_list[7])
                 dl_stats['bps'] = float(csv_list[8])
                 dl_stats['duration'] = float(csv_list[6].split("-")[1])
+                print_results(dl_stats, "Download") 
 
             elif line_count == 2:
                 ul_stats['transferred_bytes'] = float(csv_list[7])
                 ul_stats['bps'] = float(csv_list[8])
                 ul_stats['duration'] = float(csv_list[6].split("-")[1])
+                print_results(ul_stats, "Upload") 
             
             line_count += 1
-            
-        print_results(dl_stats, "Download") 
-        print_results(ul_stats, "Upload") 
+        
+    button.config(text="Run Test")
+    button.update_idletasks()
 
 def print_results(stats, label):
     """
@@ -63,6 +70,7 @@ def print_results(stats, label):
     for key, value in stats.items():
         results["text"] += key + ": " + str(value) + "\n"
     results["text"] += "\n"
+    results.update_idletasks()
     
 
 
@@ -92,11 +100,6 @@ root.title(TITLE)
 
 canvas = tk.Canvas(root,height=HEIGHT, width=WIDTH)
 canvas.pack()
-
-#CANNOT use jpg for background
-#bg_image = tk.PhotoImage(file='./space1.png')
-#bg_label = tk.Label(root, image=bg_image)
-#bg_label.place(relwidth=1, relheight=1)
 
 header = tk.Label(root, text=TITLE, font=('Ubuntu', 30))
 header.place(relx=0.5, rely=0, relwidth=0.75, anchor='n')
