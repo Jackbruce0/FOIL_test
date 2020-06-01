@@ -11,7 +11,7 @@ TITLE = "DJM FOIL Test"
 
 # File locations
 script_dir = "/home/djm/FOIL_test/scripts/"
-image_dir = "./img"
+image_dir = "./img/"
 results_file = "/tmp/foil_test.txt"
 
 # Test result vars
@@ -62,6 +62,7 @@ def bw_test():
     button.config(text="Run Test")
     button.update_idletasks()
 
+
 def print_results(stats, label):
     """
     Prints stats dictionary to results panel
@@ -72,7 +73,6 @@ def print_results(stats, label):
     results["text"] += "\n"
     results.update_idletasks()
     
-
 
 def is_connected():
     """
@@ -95,11 +95,18 @@ def connection_loop():
     is_connected()
     root.after(1500, connection_loop)
 
+def shutdown():
+    """shutdown system"""
+    subprocess.call(["shutdown", "0"])
+
 root = tk.Tk()
 root.title(TITLE)
 
 canvas = tk.Canvas(root,height=HEIGHT, width=WIDTH)
 canvas.pack()
+
+# final configuration will be full screen only
+#root.attributes("-fullscreen", True)
 
 header = tk.Label(root, text=TITLE, font=('Ubuntu', 30))
 header.place(relx=0.5, rely=0, relwidth=0.75, anchor='n')
@@ -116,6 +123,7 @@ connected = tk.Label(top_frame,
     font=('Ubuntu', 20), bg="white", anchor='w', justify="left")
 connected.place (relx=0.01, relwidth=0.50, relheight = 1)
 
+# run test button
 button = tk.Button(top_frame, text="Run Test", font=('Ubuntu', 12), 
     command=bw_test)
 button.place(relx=0.7, relheight=1, relwidth=0.3)
@@ -136,6 +144,17 @@ results = tk.Label(lower_frame, font=('Ubuntu', 15), anchor='nw',
 results.place(rely=.1, relwidth=1, relheight=.9)
 
 # END OF RESULTS PANE CONFIGUTRATION
+
+# BOTTOM LEFT BUTTONS CONFIGURATION
+bottom_frame = tk.Frame(root, bd=5)
+bottom_frame.place(relx=0.5, rely=0.85, relwidth=1, relheight=0.15, anchor='n')
+
+power_img = PhotoImage(file=image_dir+"power_off.png")
+shutdown_button = tk.Button(bottom_frame, text="Power Off", image=power_img, 
+    command=shutdown)
+shutdown_button.place(relx=0.92)
+# END OF BOTTOM LEFT BUTTONS CONFIGURATION
+
 root.after(1500, connection_loop)
 root.mainloop()
 
