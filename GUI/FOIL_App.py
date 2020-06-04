@@ -23,8 +23,8 @@ def bw_test():
     Main method that will call iperf scripts and test BW
     iperf scripts will send output to file in which results will be retrieved
     """
-    button.config(text="Testing...")
-    button.update_idletasks()
+    run_test_btn.config(text="Testing...")
+    run_test_btn.update_idletasks()
 
     results["text"] = "" 
     results.update_idletasks()
@@ -59,8 +59,8 @@ def bw_test():
             
             line_count += 1
         
-    button.config(text="Run Test")
-    button.update_idletasks()
+    run_test_btn.config(text="Run Test")
+    run_test_btn.update_idletasks()
 
 
 def print_results(stats, label):
@@ -124,9 +124,13 @@ connected = tk.Label(top_frame,
 connected.place (relx=0.01, relwidth=0.50, relheight = 1)
 
 # run test button
-button = tk.Button(top_frame, text="Run Test", font=('Ubuntu', 12), 
+run_test_btn = tk.Button(top_frame, text="Run Test", font=('Ubuntu', 12), 
     command=bw_test)
-button.place(relx=0.7, relheight=1, relwidth=0.3)
+run_test_btn.place(relx=0.7, relheight=1, relwidth=0.15)
+
+# stop test button
+stop_test_btn = tk.Button(top_frame, text="Stop Test", font=('Ubuntu', 12))
+stop_test_btn.place(relx=0.85, relheight=1, relwidth=0.15)
 
 # END OF TOP_FRAME COMPONENTS
 
