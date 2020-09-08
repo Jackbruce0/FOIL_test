@@ -32,7 +32,7 @@ destination_port,id,interval,transferred_bytes,bits_per_second >> $outfile
 # Start client
 # -t = time of tests (in seconds)
 # -r = dual test (1 at a time)
-iperf -B 10.50.0.1 -c 10.60.1.1 -t 15 -r --reportstyle C >> $outfile
+iperf -B 10.50.0.1 -c 10.60.1.1 -t 10 -r --reportstyle C >> $outfile
 
 # kill server (remove files? maybe that is a driver/GUI job)
 kill -9 $s_pid

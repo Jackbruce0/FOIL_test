@@ -2,6 +2,9 @@ import tkinter as tk
 from tkinter import * 
 import subprocess 
 import os
+import threading
+import ctypes
+import time
 
 # Dimensions for baby screen
 HEIGHT = 600
@@ -18,6 +21,52 @@ results_file = "/tmp/foil_test.txt"
 dl_stats = {'transferred_bytes': 0, 'bps': 0, 'duration': 0}
 ul_stats = {'transferred_bytes': 0, 'bps': 0, 'duration': 0} 
 
+bw_thread = None
+
+class bw_test_thread(threading.Thread):
+    def __init__(self, name):
+        threading.Thread.__init__(self)
+        self.name = name
+
+    def run(self):
+        # target function of the thread class
+        bw_test()
+
+    def get_id(self):
+        # returns id of the respective thread
+        if hasattr(self, '_thread_id'):
+            return self._thread_id
+        for id, thread in threading._active.items():
+            if thread is self:
+                return id
+
+    def raise_exception(self):
+        thread_id = self.get_id()
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id,
+            ctypes.py_object(SystemExit))
+        if res > 1:
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
+            print('Exception raise failure')
+                
+
+def bw_test_helper():
+    """
+    Helper function for making bw_test a thread
+    """
+    global bw_thread
+    bw_thread = bw_test_thread('Test Thread') 
+    bw_thread.start()
+
+def bw_test_stop():
+    """
+    Stops currently running bw_test thread
+    """
+    bw_thread.raise_exception()
+    #bw_thread.join()
+    run_test_btn.config(text="Run Test")
+    run_test_btn.update_idletasks()
+    
+
 def bw_test():
     """
     Main method that will call iperf scripts and test BW
@@ -30,6 +79,9 @@ def bw_test():
     results.update_idletasks()
 
     if not is_connected():
+        results["text"] = "TEST FAILED"
+        run_test_btn.config(text="Run Test")
+        run_test_btn.update_idletasks()
         return
     subprocess.call([script_dir+"run_test.sh"])
     
@@ -49,15 +101,23 @@ def bw_test():
                 dl_stats['transferred_bytes'] = float(csv_list[7])
                 dl_stats['bps'] = float(csv_list[8])
                 dl_stats['duration'] = float(csv_list[6].split("-")[1])
-                print_results(dl_stats, "Download") 
+                print_results(dl_stats, "DOWNLOAD") 
 
             elif line_count == 2:
                 ul_stats['transferred_bytes'] = float(csv_list[7])
                 ul_stats['bps'] = float(csv_list[8])
                 ul_stats['duration'] = float(csv_list[6].split("-")[1])
-                print_results(ul_stats, "Upload") 
+                print_results(ul_stats, "UPLOAD") 
             
             line_count += 1
+        
+    # PASS/FAIL LOGIC
+    threshold = 900000000 #bps
+    if dl_stats["bps"] > threshold and ul_stats["bps"] > threshold:
+        results["text"] += "TEST PASSED"
+    else:
+        results["text"] += "TEST FAILED"
+
         
     run_test_btn.config(text="Run Test")
     run_test_btn.update_idletasks()
@@ -68,11 +128,23 @@ def print_results(stats, label):
     Prints stats dictionary to results panel
     """
     results["text"] += label + ":\n"
+    """
     for key, value in stats.items():
         results["text"] += key + ": " + str(value) + "\n"
+    """
+    results["text"] += "    Throughput: "\
+    + str("{:.2f}".format(stats["bps"]/1000000)) + " Mbps\n"
+    results["text"] += "    Data Transferred: "\
+    + str("{:.2f}".format(stats["transferred_bytes"]/1000000000)) + " GB\n"
+    """
+    results["text"] += "    Test Duration: "\
+    + str(stats["duration"]) + " s\n" 
+    """
+
+
     results["text"] += "\n"
     results.update_idletasks()
-    
+
 
 def is_connected():
     """
@@ -82,11 +154,14 @@ def is_connected():
     devnull = open(os.devnull, 'w')
     e_code = subprocess.call([script_dir+"is_connected.sh"], stdout=devnull)
     if e_code != 0:
-        connected["text"] = "Not Connected"
+        connected["text"] = "NOT CONNECTED"
+        connected["fg"] = "#ff0000"
         return False 
     else:
-        connected["text"] = "Connected"
+        connected["text"] = "CONNECTED"
+        connected["fg"] = "#00e600"
         return True
+
 
 def connection_loop():
     """
@@ -95,9 +170,11 @@ def connection_loop():
     is_connected()
     root.after(1500, connection_loop)
 
+
 def shutdown():
     """shutdown system"""
     subprocess.call(["shutdown", "0"])
+
 
 root = tk.Tk()
 root.title(TITLE)
@@ -120,18 +197,18 @@ top_frame = tk.Frame(root, bg="white", bd=5)
 top_frame.place(relx=0.5, rely=0.11, relwidth=0.75, relheight=0.1, anchor='n')
 
 connected = tk.Label(top_frame,
-    font=('Ubuntu', 20), bg="white", anchor='w', justify="left")
+    font=('Ubuntu', 25), bg="white", anchor='w', justify="left")
 connected.place (relx=0.01, relwidth=0.50, relheight = 1)
 
 # run test button
-run_test_btn = tk.Button(top_frame, text="Run Test", font=('Ubuntu', 12), 
-    command=bw_test)
-run_test_btn.place(relx=0.7, relheight=1, relwidth=0.15)
+run_test_btn = tk.Button(top_frame, text="Run Test", font=('Ubuntu', 20), 
+    command=bw_test_helper)
+run_test_btn.place(relx=0.6, relheight=1, relwidth=0.20)
 
-# stop test button
-stop_test_btn = tk.Button(top_frame, text="Stop Test", font=('Ubuntu', 12))
-stop_test_btn.place(relx=0.85, relheight=1, relwidth=0.15)
-
+# stop test button - requires multithread only do if I have to
+stop_test_btn = tk.Button(top_frame, text="CANCEL", font=('Ubuntu', 20),
+    command=bw_test_stop)
+stop_test_btn.place(relx=0.80, relheight=1, relwidth=0.20)
 # END OF TOP_FRAME COMPONENTS
 
 # RESULTS PANE CONFIGUTRATION
@@ -139,11 +216,11 @@ stop_test_btn.place(relx=0.85, relheight=1, relwidth=0.15)
 lower_frame = tk.Frame(root, bg="white", bd=10)
 lower_frame.place(relx=0.5, rely=0.25, relwidth=0.75, relheight=0.6,anchor='n')
 
-result_head = tk.Label(lower_frame, text="Test Results:", font=('Ubuntu', 12), 
+result_head = tk.Label(lower_frame, text="Test Results:", font=('Ubuntu', 20), 
     bg="white",anchor='w',justify='left')
 result_head.place(relwidth = 1, relheight=.08)
 
-results = tk.Label(lower_frame, font=('Ubuntu', 15), anchor='nw', 
+results = tk.Label(lower_frame, font=('Ubuntu', 18), anchor='nw', 
     justify='left', bd=4) 
 results.place(rely=.1, relwidth=1, relheight=.9)
 
