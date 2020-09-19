@@ -2,23 +2,8 @@
 
 # Main script for running throughput test
 
-#shutdown() {
-## Get our prrocess group id
-#    echo shutdown initiatedd!!!
-#    PGID=$(ps -o pgid= $$ | grep -o [0-9]*)
-#
-#    echo shutdown initiatedd!!!
-#    # Kill it in a new processs group
-#    setsid kill -- -$PGID
-#    echo shutdown initiatedd!!!
-#    exit 0
-#}
-
 script_dir="/home/djm/FOIL_test/scripts/"
 outfile="/tmp/foil_test.txt"
-
-
-#trap "shutdown" SIGINT SIGTERM SIGKILL
 
 if [ -f $outfile ]
 then
