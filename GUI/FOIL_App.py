@@ -23,10 +23,14 @@ ul_stats = {'transferred_bytes': 0, 'bps': 0, 'duration': 0}
 
 bw_thread = None
 
+global test_pid
+test_pid = -1
+
 class bw_test_thread(threading.Thread):
     def __init__(self, name):
         threading.Thread.__init__(self)
         self.name = name
+        global test_pid
 
     def run(self):
         # target function of the thread class
@@ -61,10 +65,19 @@ def bw_test_stop():
     """
     Stops currently running bw_test thread
     """
+
     bw_thread.raise_exception()
     #bw_thread.join()
     run_test_btn.config(text="Run Test")
     run_test_btn.update_idletasks()
+
+    # -1 -> no test running
+    #if test_pid != -1:
+    #subprocess.call(["kill", "-9", str(test_pid)])
+    #print(test_pid)
+    pid = test_pid.pid
+    subprocess.call(["kill", "-9", str(pid)])
+    subprocess.call([script_dir+"kill_children.sh"])
     
 
 def bw_test():
@@ -72,6 +85,7 @@ def bw_test():
     Main method that will call iperf scripts and test BW
     iperf scripts will send output to file in which results will be retrieved
     """
+    global test_pid
     run_test_btn.config(text="Testing...")
     run_test_btn.update_idletasks()
 
@@ -83,7 +97,9 @@ def bw_test():
         run_test_btn.config(text="Run Test")
         run_test_btn.update_idletasks()
         return
-    subprocess.call([script_dir+"run_test.sh"])
+    test_pid = subprocess.Popen([script_dir+"run_test.sh"])
+    test_pid.wait()
+    # doesn't return pid.. returns exit code
     
     """
     VERY sloppy line_count variable explained
@@ -121,6 +137,9 @@ def bw_test():
         
     run_test_btn.config(text="Run Test")
     run_test_btn.update_idletasks()
+    
+    # -1 -> no test running 
+    test_pid = -1
 
 
 def print_results(stats, label):
@@ -183,7 +202,7 @@ canvas = tk.Canvas(root,height=HEIGHT, width=WIDTH)
 canvas.pack()
 
 # final configuration will be full screen only
-#root.attributes("-fullscreen", True)
+root.attributes("-fullscreen", True)
 
 header = tk.Label(root, text=TITLE, font=('Ubuntu', 30))
 header.place(relx=0.5, rely=0, relwidth=0.75, anchor='n')
@@ -211,21 +230,6 @@ stop_test_btn = tk.Button(top_frame, text="CANCEL", font=('Ubuntu', 20),
 stop_test_btn.place(relx=0.80, relheight=1, relwidth=0.20)
 # END OF TOP_FRAME COMPONENTS
 
-# RESULTS PANE CONFIGUTRATION
-
-lower_frame = tk.Frame(root, bg="white", bd=10)
-lower_frame.place(relx=0.5, rely=0.25, relwidth=0.75, relheight=0.6,anchor='n')
-
-result_head = tk.Label(lower_frame, text="Test Results:", font=('Ubuntu', 20), 
-    bg="white",anchor='w',justify='left')
-result_head.place(relwidth = 1, relheight=.08)
-
-results = tk.Label(lower_frame, font=('Ubuntu', 18), anchor='nw', 
-    justify='left', bd=4) 
-results.place(rely=.1, relwidth=1, relheight=.9)
-
-# END OF RESULTS PANE CONFIGUTRATION
-
 # BOTTOM LEFT BUTTONS CONFIGURATION
 bottom_frame = tk.Frame(root, bd=5)
 bottom_frame.place(relx=0.5, rely=0.85, relwidth=1, relheight=0.15, anchor='n')
@@ -235,6 +239,21 @@ shutdown_button = tk.Button(bottom_frame, text="Power Off", image=power_img,
     command=shutdown)
 shutdown_button.place(relx=0.92)
 # END OF BOTTOM LEFT BUTTONS CONFIGURATION
+
+# RESULTS PANE CONFIGUTRATION
+
+lower_frame = tk.Frame(root, bg="white", bd=10)
+lower_frame.place(relx=0.5, rely=0.25, relwidth=0.75, relheight=0.75,anchor='n')
+
+result_head = tk.Label(lower_frame, text="Test Results:", font=('Ubuntu', 30), 
+    bg="white",anchor='w',justify='left')
+result_head.place(relwidth = 1, relheight=.1)
+
+results = tk.Label(lower_frame, font=('Ubuntu', 25), anchor='nw', 
+    justify='left', bd=4) 
+results.place(rely=.1, relwidth=1, relheight=.9)
+
+# END OF RESULTS PANE CONFIGUTRATION
 
 root.after(1500, connection_loop)
 root.mainloop()
